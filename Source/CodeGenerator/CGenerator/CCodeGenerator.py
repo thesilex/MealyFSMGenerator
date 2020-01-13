@@ -156,7 +156,7 @@ class CCodeGenerator(CodeGenerator):
         h_file_writer.write("\n")
         h_file_writer.write("//#include ""\"functional_blocks/usecase_manager/UseCaseManager.h\"\n")
         h_file_writer.write("\n")
-        h_file_writer.write("//const struct UseCaseHandle* C01_Init(void);\n")
+        h_file_writer.write("//const struct UseCaseHandle* " + self._sm_name + "_Init(void);\n")
         h_file_writer.write("\n")
         
         # h_file_writer.write("bool " + init_func_name(self._sm_name) + "(void);\n")
