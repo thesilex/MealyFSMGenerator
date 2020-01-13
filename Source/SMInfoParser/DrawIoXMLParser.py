@@ -1,6 +1,7 @@
 # -*- coding: UTF-8 -*-
 
 import xml.sax
+from bs4 import BeautifulSoup
 from os.path import isfile
 from SMInfoParser.StateMachineInfo import StateJumpInfo
 from SMInfoParser.StateMachineInfoParser import SMInfoParser
@@ -106,9 +107,15 @@ class StateMachineInfoExtractor(SMInfoParser):
         def endElement(self, tag):
             if tag == "mxCell":
                 if self.currentItem.type == SM__STATE_JUMP:
-                    if len(self.currentItem.value.split("<br>")) in [2, 3]:
-                        self.currentItem.condition = self.currentItem.value.split("<br>")[0]
-                        self.currentItem.action = self.currentItem.value.split("<br>")[1]
+                    soup = BeautifulSoup(self.currentItem.value, 'lxml')
+                    for br in soup('br'):
+                        br.replace_with('\n')
+                    self.currentItem.value = soup.text
+                    if len(self.currentItem.value.split("\n")) in [2, 3]:
+                        self.currentItem.condition = self.currentItem.value.split("\n")[0]
+                        self.currentItem.action = self.currentItem.value.split("\n")[1]
+                    else:
+                        print("xml parse problem\n")
                 elif self.currentItem.type == SM__STATE:
                     self.state_id_to_key[self.currentItem.id] = self.currentItem.value
                 else:

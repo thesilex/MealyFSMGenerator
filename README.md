@@ -8,6 +8,10 @@ Key words used in the state machine generator are **state**, **condition** and *
 ---
 ## How to use:
 
+### Prerequisites
+- pip3 install bs4
+- sudo apt-get install python3-lxml
+
 ### Step 1: Create the state machine graph. 
 
 State machine in draw.io can be created following the example given in below:
