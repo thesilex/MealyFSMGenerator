@@ -13,6 +13,7 @@ from CodeGenerator.CGenerator.CRelatedDefines import (state_enum_type,
                                                       transition_table_name,
                                                       init_func_name,
                                                       tick_func_name,
+                                                      reset_func_name,
                                                       header_guard)
 
 RESULT_PATH = "Result"
@@ -39,8 +40,8 @@ class CCodeGenerator(CodeGenerator):
                 if exc.errno != errno.EEXIST:
                     raise RuntimeError("Cannot create the folder now")
 
-        self._func_file_name = self._sm_name + "SMFunc.c"
-        self._header_file_name = self._sm_name + "SMFunc.h"
+        self._func_file_name = self._sm_name + ".c"
+        self._header_file_name = self._sm_name + ".h"
         self._inc_file_name = self._sm_name + "SMTable.inc"
         self._prepare_dir()
 
@@ -59,11 +60,21 @@ class CCodeGenerator(CodeGenerator):
         self._create_unit_test(prepared_list)
 
     def _prepare_dir(self):
+        self.__rmdir(RESULT_PATH)
         self.__mkdir(RESULT_PATH)
         self.__mkdir(RESULT_PATH + os.sep + "src")
         self.__mkdir(RESULT_PATH + os.sep + "src" + os.sep + "fsmMgr")
         self.__mkdir(RESULT_PATH + os.sep + "unit_test")
         self.__mkdir(RESULT_PATH + os.sep + "unit_test" + os.sep + "test")
+
+    @staticmethod
+    def __rmdir(path):
+        if os.path.exists(path):
+            try:
+                shutil.rmtree(path)
+            except OSError as exc:
+                if exc.errno != errno.EEXIST:
+                    raise RuntimeError("Cannot delete the folder now")
 
     @staticmethod
     def __mkdir(path):
@@ -74,16 +85,25 @@ class CCodeGenerator(CodeGenerator):
                 if exc.errno != errno.EEXIST:
                     raise RuntimeError("Cannot create the folder now")
 
+
     def _write_c_file(self):
         c_file_writer = open(RESULT_PATH + os.sep + "src" + os.sep + self._func_file_name, 'w+')
-
+        create_copyright(c_file_writer)
         self.__create_include(c_file_writer)
         self.__create_local_variable(c_file_writer)
+        self.__create_private_interface_func_defines(c_file_writer)
+        self.__create_private_sm_func_defines(c_file_writer)
         self.__create_private_func_define(c_file_writer)
         self.__create_link_to_table(c_file_writer)
+        self.__create_private_interface_func_body(c_file_writer)
         self.__create_private_func_body(c_file_writer)
 
         c_file_writer.close()
+
+    def __create_private_sm_func_defines(self, file_descriptor):
+        file_descriptor.write("LIB_STATIC bool " + init_func_name(self._sm_name) + "(void);\n")
+        file_descriptor.write("LIB_STATIC void " + tick_func_name(self._sm_name) + "(void);\n")
+        file_descriptor.write("LIB_STATIC void " + reset_func_name(self._sm_name) + "(void);\n")
 
     def __create_link_to_table(self, file_descriptor):
         file_descriptor.write("#include \"" + self._inc_file_name + "\"\n")
@@ -91,40 +111,61 @@ class CCodeGenerator(CodeGenerator):
 
     def __create_include(self, file_descriptor):
         file_descriptor.write("#include \"MealyFSM.h\"\n")
+        file_descriptor.write("//#include \"utils/fsmMgr/MealyFSM.h\"\n")
         file_descriptor.write("#include \"" + self._header_file_name + "\"\n")
         file_descriptor.write("\n")
 
     def __create_local_variable(self, file_descriptor):
         file_descriptor.write("\n")
-        file_descriptor.write("STATIC FSM_t* smHandler;\n")
+        file_descriptor.write("LIB_STATIC FSM_t* smHandler;\n")
+        file_descriptor.write("\n")
+
+    def __create_private_interface_func_defines(self, file_descriptor):
+        file_descriptor.write("static void Execute(void);\n")
+        file_descriptor.write("static void Reset(void);\n")
         file_descriptor.write("\n")
 
     def __create_private_func_define(self, file_descriptor):
         for item in self._priv_func_name_list:
-            file_descriptor.write("STATIC void " + item + "( void );\n")
+            file_descriptor.write("LIB_STATIC void " + item + "(void);\n")
 
         file_descriptor.write("\n")
 
+    def __create_private_interface_func_body(self, file_descriptor):
+            priv_func_str = "static void Execute(void){\n" + "    " + tick_func_name(self._sm_name) + "();\n" + "}\n\n"
+            file_descriptor.write(priv_func_str)
+            priv_func_str = "static void Reset(void){\n" + "    " + reset_func_name(self._sm_name) + "();\n" + "}\n\n"
+            file_descriptor.write(priv_func_str)
+
     def __create_private_func_body(self, file_descriptor):
         for item in self._priv_func_name_list:
-            priv_func_str = "STATIC void " + item + "( void ){\n" \
+            priv_func_str = "LIB_STATIC void " + item + "(void){\n" \
                             "\n" \
                             "}\n\n"
             file_descriptor.write(priv_func_str)
 
     def _write_header_file(self):
         h_file_writer = open(RESULT_PATH + os.sep + "src" + os.sep + self._header_file_name, 'w+')
-
+        create_copyright(h_file_writer)
         h_file_writer.write("#ifndef " + header_guard(self._sm_name) + "\n")
         h_file_writer.write("#define " + header_guard(self._sm_name) + "\n")
         h_file_writer.write("\n")
-        h_file_writer.write("#include <stdbool.h>\n")
-        h_file_writer.write("\n")
-        h_file_writer.write("bool " + init_func_name(self._sm_name) + "( void );\n")
-        h_file_writer.write("void " + tick_func_name(self._sm_name) + "( void );\n")
-        h_file_writer.write("\n")
+        h_file_writer.write("#ifdef __cplusplus\n")
+        h_file_writer.write("#extern \"C\" {\n")
         h_file_writer.write("#endif\n")
-
+        h_file_writer.write("\n")
+        h_file_writer.write("//#include ""\"functional_blocks/usecase_manager/UseCaseManager.h\"\n")
+        h_file_writer.write("\n")
+        h_file_writer.write("//const struct UseCaseHandle* C01_Init(void);\n")
+        h_file_writer.write("\n")
+        
+        # h_file_writer.write("bool " + init_func_name(self._sm_name) + "(void);\n")
+        # h_file_writer.write("void " + tick_func_name(self._sm_name) + "(void);\n")
+        h_file_writer.write("#ifdef __cplusplus\n")
+        h_file_writer.write("}\n")
+        h_file_writer.write("#endif\n")
+        h_file_writer.write("\n")
+        h_file_writer.write("#endif /* " + header_guard(self._sm_name) + " */\n")
         h_file_writer.close()
 
     def _write_inc_file(self, prepared_list):
@@ -135,6 +176,7 @@ class CCodeGenerator(CodeGenerator):
         self.__create_table(table_file_writer, prepared_list)
         self.__create_init_func(table_file_writer)
         self.__create_tick_func(table_file_writer)
+        self.__create_reset_func(table_file_writer)
 
     def __create_enumeration(self, file_descriptor):
         list_nr = len(self._priv_state_name_list)
@@ -159,7 +201,7 @@ class CCodeGenerator(CodeGenerator):
         file_descriptor.write("\n")
 
     def __create_table(self, file_descriptor, prepared_list):
-        file_descriptor.write("STATIC const " + state_type(self._sm_name) + " " +
+        file_descriptor.write("LIB_STATIC const " + state_type(self._sm_name) + " " +
                                       transition_table_name(self._sm_name) + "[" +
                                       sm_state_common(self._sm_name) + "END" + "] = {\n")
 
@@ -190,8 +232,8 @@ class CCodeGenerator(CodeGenerator):
         file_descriptor.write("\n")
 
     def __create_init_func(self, file_descriptor):
-        file_descriptor.write("bool " + init_func_name(self._sm_name) + "(void){\n")
-        file_descriptor.write("    smHandler = FSM_New((void*) " + transition_table_name(self._sm_name) + ",\n")
+        file_descriptor.write("LIB_STATIC bool " + init_func_name(self._sm_name) + "(void){\n")
+        file_descriptor.write("    smHandler = M_FSM_New((void*) " + transition_table_name(self._sm_name) + ",\n")
         file_descriptor.write("                        sizeof(" + state_type(self._sm_name) + "),\n")
         file_descriptor.write("                        " + self._priv_state_name_list[0] + ",\n")
         file_descriptor.write("                        " + self._priv_condi_name_list[0] + ",\n")
@@ -199,11 +241,20 @@ class CCodeGenerator(CodeGenerator):
         file_descriptor.write("                        " + self._priv_condi_name_list[0] + ");\n")
         file_descriptor.write("    return (smHandler == NULL ) ? false : true;\n}\n")
         file_descriptor.write("\n")
+        file_descriptor.write("\n")
 
     def __create_tick_func(self, file_descriptor):
-        file_descriptor.write("void " + tick_func_name(self._sm_name) + "(void){\n")
-        file_descriptor.write("    FSM_Tick(smHandler);\n")
+        file_descriptor.write("LIB_STATIC void " + tick_func_name(self._sm_name) + "(void){\n")
+        file_descriptor.write("    M_FSM_Tick(smHandler);\n")
         file_descriptor.write("}\n")
+        file_descriptor.write("\n")
+
+    def __create_reset_func(self, file_descriptor):
+        file_descriptor.write("LIB_STATIC void " + reset_func_name(self._sm_name) + "(void){\n")
+        file_descriptor.write("    smHandler->currentCondition = " + self._priv_condi_name_list[0] + ";\n");
+        file_descriptor.write("    smHandler->currentState = " + self._priv_state_name_list[0] + ";\n");
+        file_descriptor.write("}\n")
+        file_descriptor.write("\n")
 
     def _copy_default_files(self):
         c_generator_dir = os.path.dirname(os.path.abspath(__file__))
@@ -212,7 +263,8 @@ class CCodeGenerator(CodeGenerator):
     def _create_unit_test(self, prepared_list):
         self.__copy_ceedling()
         utest_file_writer = open(RESULT_PATH + os.sep + "unit_test" + os.sep + "test" +
-                                 os.sep + "test_" + self._sm_name + "SMFunc.c", 'w+')
+                                 os.sep + "test_" + self._sm_name + ".c", 'w+')
+        create_copyright(utest_file_writer)
         self.__write_include(utest_file_writer)
         self.__create_enumeration(utest_file_writer)
         self.__create_transition_table_line_type(utest_file_writer)
@@ -231,7 +283,10 @@ class CCodeGenerator(CodeGenerator):
 
     def __write_extern(self, utest_file_descriptor):
         for item in self._priv_func_name_list:
-            utest_file_descriptor.write("extern void " + item + "( void );\n")
+            utest_file_descriptor.write("extern void " + item + "(void);\n")
+        utest_file_descriptor.write("extern bool " + init_func_name(self._sm_name) + "(void);\n")
+        utest_file_descriptor.write("extern void " + tick_func_name(self._sm_name) + "(void);\n")
+        utest_file_descriptor.write("extern void " + reset_func_name(self._sm_name) + "(void);\n")
         utest_file_descriptor.write("extern FSM_t* smHandler;\n")
         utest_file_descriptor.write("extern const " + state_type(self._sm_name) + " " +
                                     transition_table_name(self._sm_name) + "[" +
@@ -249,24 +304,24 @@ class CCodeGenerator(CodeGenerator):
                                     "\n")
         utest_file_descriptor.write("void test_InitFailed(void)\n"
                                     "{\n"
-                                    "    FSM_New_ExpectAnyArgsAndReturn(NULL);\n"
+                                    "    M_FSM_New_ExpectAnyArgsAndReturn(NULL);\n"
                                     "\n"
-                                    "    TEST_ASSERT_EQUAL(false, " + self._sm_name + "_Init());\n"
+                                    "    TEST_ASSERT_EQUAL(false, " + self._sm_name + "_SM_Init());\n"
                                     "}\n"
                                     "\n"
                                     "void test_InitSuccess(void)\n"
                                     "{\n"
                                     "    FSM_t fsm;\n"
-                                    "    FSM_New_ExpectAnyArgsAndReturn(&fsm);\n"
+                                    "    M_FSM_New_ExpectAnyArgsAndReturn(&fsm);\n"
                                     "\n"
-                                    "    TEST_ASSERT_EQUAL(true, " + self._sm_name + "_Init());\n"
+                                    "    TEST_ASSERT_EQUAL(true, " + self._sm_name + "_SM_Init());\n"
                                     "}\n"
                                     "\n"
                                     "void test_TickIsCalled(void)\n"
                                     "{\n"
-                                    "    FSM_Tick_ExpectAnyArgs();\n"
+                                    "    M_FSM_Tick_ExpectAnyArgs();\n"
                                     "\n"
-                                    "    " + self._sm_name + "_Tick();\n"
+                                    "    " + self._sm_name + "_SM_Tick();\n"
                                     "}\n"
                                     "\n")
 
@@ -364,4 +419,12 @@ class CCodeGenerator(CodeGenerator):
                 shutil.copytree(s, d)
             else:
                 shutil.copy2(s, d)
-
+                
+def create_copyright(file_descriptor):
+    file_descriptor.write("/*\n")
+    file_descriptor.write(" *\n")
+    file_descriptor.write(" * Copyright (C) EVBox Intelligence B.V., Inc - All Rights Reserved\n")
+    file_descriptor.write(" * Unauthorized copying of this file, via any medium is strictly prohibited\n")
+    file_descriptor.write(" * Proprietary and confidential\n")
+    file_descriptor.write(" *\n")
+    file_descriptor.write(" */\n")

@@ -19,13 +19,17 @@ def transition_table_name(sm_name):
 
 
 def init_func_name(sm_name):
-    return sm_name + "_Init"
+    return sm_name + "_SM_Init"
 
 
 def tick_func_name(sm_name):
-    return sm_name + "_Tick"
+    return sm_name + "_SM_Tick"
+
+
+def reset_func_name(sm_name):
+    return sm_name + "_SM_Reset"
 
 
 def header_guard(sm_name):
-    return sm_name.upper() + "_H"
+    return "_" + sm_name.upper() + "_H"
 

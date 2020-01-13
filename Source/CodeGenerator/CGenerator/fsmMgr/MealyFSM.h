@@ -5,9 +5,9 @@
 #include <stdbool.h>
 
 #ifdef UNIT_TEST
-#define STATIC
+#define LIB_STATIC
 #else
-#define STATIC static
+#define LIB_STATIC static
 #endif
 
 #define MAX_FSM_NUMBER  10U
@@ -29,12 +29,12 @@ typedef struct{
     size_t defaultState;
 }FSM_t;
 
-FSM_t* FSM_New( void* table, 
-                size_t tableLineSize,
-                size_t startState,
-                size_t startCondition,
-                size_t defaultState,
-                size_t defaultCondition );
+FSM_t* M_FSM_New( void* table, 
+                  size_t tableLineSize,
+                  size_t startState,
+                  size_t startCondition,
+                  size_t defaultState,
+                  size_t defaultCondition );
 
-void FSM_Tick( FSM_t* self );
+void M_FSM_Tick( FSM_t* self );
 void FSM_UpdateCondition( FSM_t* self, size_t newCondition );

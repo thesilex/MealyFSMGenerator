@@ -3,7 +3,7 @@
 static FSM_t fsmList[MAX_FSM_NUMBER];
 static size_t fsmCount = 0;
 
-FSM_t* FSM_New( void* table, size_t tableLineSize, size_t startState, size_t startCondition, size_t defaultState, size_t defaultCondition )
+FSM_t* M_FSM_New( void* table, size_t tableLineSize, size_t startState, size_t startCondition, size_t defaultState, size_t defaultCondition )
 {
     FSM_t* ret = NULL;
 
@@ -21,7 +21,7 @@ FSM_t* FSM_New( void* table, size_t tableLineSize, size_t startState, size_t sta
     return ret;
 }
 
-void FSM_Tick( FSM_t* self )
+void M_FSM_New( FSM_t* self )
 {
     uint32_t newTransitionOffset = ( self->tableLineSize * self->currentState + 
                                      self->currentCondition * sizeof(Transition_t) );
