@@ -151,7 +151,7 @@ class CCodeGenerator(CodeGenerator):
         h_file_writer.write("#define " + header_guard(self._sm_name) + "\n")
         h_file_writer.write("\n")
         h_file_writer.write("#ifdef __cplusplus\n")
-        h_file_writer.write("#extern \"C\" {\n")
+        h_file_writer.write("extern \"C\" {\n")
         h_file_writer.write("#endif\n")
         h_file_writer.write("\n")
         h_file_writer.write("//#include ""\"functional_blocks/usecase_manager/UseCaseManager.h\"\n")
