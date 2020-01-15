@@ -251,8 +251,8 @@ class CCodeGenerator(CodeGenerator):
 
     def __create_reset_func(self, file_descriptor):
         file_descriptor.write("LIB_STATIC void " + reset_func_name(self._sm_name) + "(void){\n")
-        file_descriptor.write("    smHandler->currentCondition = " + self._priv_condi_name_list[0] + ";\n");
-        file_descriptor.write("    smHandler->currentState = " + self._priv_state_name_list[0] + ";\n");
+        file_descriptor.write("    smHandler->currentCondition = smHandler->defaultCondition;\n")
+        file_descriptor.write("    smHandler->currentState = smHandler->defaultState;\n")
         file_descriptor.write("}\n")
         file_descriptor.write("\n")
 
